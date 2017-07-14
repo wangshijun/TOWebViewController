@@ -28,7 +28,7 @@
 {
     self.view = [[UIView alloc] initWithFrame:[UIScreen mainScreen].bounds];
     self.view.backgroundColor = [UIColor colorWithWhite:0.9f alpha:1.0f];
-    
+
     self.tableView = [[UITableView alloc] initWithFrame:self.view.bounds style:UITableViewStyleGrouped];
     self.tableView.delegate = self;
     self.tableView.dataSource = self;
@@ -39,9 +39,9 @@
 - (void)viewDidLoad
 {
     [super viewDidLoad];
-    
+
     self.title = @"TOWebViewController";
-    
+
     if (MINIMAL_UI) {
         self.tableView.backgroundView = [UIView new];
         self.view.backgroundColor = [UIColor colorWithWhite:0.95f alpha:1.0f];
@@ -52,13 +52,13 @@
             self.tableView.backgroundView = [UIView new];
             self.tableView.backgroundView.backgroundColor = [UIColor clearColor];
         }
-        
+
         self.tableView.separatorStyle = UITableViewCellSeparatorStyleSingleLineEtched;
     }
-    
+
     UIBarButtonItem *backItem = [[UIBarButtonItem alloc] initWithTitle:@"Back" style:UIBarButtonItemStylePlain target:nil action:nil];
     [self.navigationItem setBackBarButtonItem:backItem];
-    
+
 #ifdef TO_ONEPASSWORD_EXAMPLE
     NSHTTPCookieStorage *storage = [NSHTTPCookieStorage sharedHTTPCookieStorage];
     for (NSHTTPCookie *cookie in [storage cookies]) {
@@ -77,31 +77,31 @@
 - (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath
 {
     static NSString *tableCellIdentifier = @"TableViewCell";
-    
+
     UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:tableCellIdentifier];
     if (cell == nil) {
         cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:tableCellIdentifier];
         cell.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
     }
-    
+
     if (indexPath.row == 0) {
         cell.textLabel.text = @"Present as Modal View Controller";
     }
     else {
         cell.textLabel.text = @"Push onto Navigation Controller";
     }
-    
+
     return cell;
 }
 
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath
 {
     [tableView deselectRowAtIndexPath:indexPath animated:YES];
-    
+
     NSURL *url = nil;
-    
+
 #ifdef TO_ONEPASSWORD_EXAMPLE
-    url = [NSURL URLWithString:@"https://accounts.google.com/login"];
+    url = [NSURL URLWithString:@"https://m.opentable.com"];
 #else
     if (UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPad)
         url = [NSURL URLWithString:@"www.apple.com/ipad"];
@@ -110,16 +110,22 @@
     else
         url = [NSURL URLWithString:@"www.apple.com/iphone"];
 #endif
-    
+
     TOWebViewController *webViewController = [[TOWebViewController alloc] initWithURL:url];
 #ifdef TO_ONEPASSWORD_EXAMPLE
     webViewController.showOnePasswordButton = YES;
 #endif
 
+    webViewController.showOnePasswordButton = false;
+    webViewController.showActionButton = false;
+    webViewController.showDoneButton = false;
+    webViewController.showCloseButton = true;
+    webViewController.navigationButtonsHidden = true;
+
 // Uncomment this if you want to test out placing buttons permanently in the left hand side of the navigation bar
 //    UIBarButtonItem *testItem = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemAdd target:nil action:nil];
 //    webViewController.applicationLeftBarButtonItems = @[testItem];
-    
+
     if (indexPath.row == 0) {
         [self presentViewController:[[UINavigationController alloc] initWithRootViewController:webViewController] animated:YES completion:nil];
     }

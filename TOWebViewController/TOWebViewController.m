@@ -56,7 +56,7 @@
 #define TOOLBAR_HEIGHT ((CGFloat)44.f)
 
 /* Hieght of the loading progress bar view */
-#define LOADING_BAR_HEIGHT ((CGFloat)2.f)        
+#define LOADING_BAR_HEIGHT ((CGFloat)2.f)
 
 #pragma mark -
 #pragma mark Hidden Properties/Methods
@@ -66,7 +66,7 @@
                                    MFMessageComposeViewControllerDelegate,
                                    NJKWebViewProgressDelegate,CAAnimationDelegate>
 {
-    
+
     //The state of the UIWebView's scroll view before the rotation animation has started
     struct {
         CGSize     frameSize;
@@ -101,6 +101,7 @@
 @property (nonatomic,strong) UIBarButtonItem *reloadStopButton;       /* Reload / Stop buttons */
 @property (nonatomic,strong) UIBarButtonItem *actionButton;           /* Shows the UIActivityViewController */
 @property (nonatomic,strong) UIBarButtonItem *doneButton;             /* The 'Done' button for modal contorllers */
+@property (nonatomic,strong) UIBarButtonItem *closeButton;            /* The 'Close' button for modal contorllers */
 
 /* Load Progress Manager */
 @property (nonatomic,strong) NJKWebViewProgress *progressManager;
@@ -185,7 +186,7 @@
 {
     if (self = [super initWithNibName:nibNameOrNil bundle:nibBundleOrNil])
         [self setup];
-  
+
     return self;
 }
 
@@ -193,7 +194,7 @@
 {
     if (self = [super init])
         _url = [self cleanURL:url];
-    
+
     return self;
 }
 
@@ -209,7 +210,7 @@
     if (url.scheme.length == 0) {
         url = [NSURL URLWithString:[NSString stringWithFormat:@"http://%@", [url absoluteString]]];
     }
-    
+
     return url;
 }
 
@@ -222,11 +223,11 @@
     _showUrlWhileLoading = YES;
     _showPageTitles   = YES;
     _initialLoad      = YES;
-    
+
     _progressManager = [[NJKWebViewProgress alloc] init];
     _progressManager.webViewProxyDelegate = self;
     _progressManager.progressDelegate = self;
-    
+
     //Set the initial default style as full screen (But this can be easily overridden)
     self.modalPresentationStyle = UIModalPresentationFullScreen;
 
@@ -245,7 +246,7 @@
     view.opaque = YES;
     view.clipsToBounds = YES;
     self.view = view;
-    
+
     //create and add the detail gradient to the background view
     if (MINIMAL_UI == NO) {
         self.gradientLayer = [CAGradientLayer layer];
@@ -253,7 +254,7 @@
         self.gradientLayer.frame = self.view.bounds;
         [self.view.layer addSublayer:self.gradientLayer];
     }
-    
+
     //Create the web view
     self.webView = [[UIWebView alloc] initWithFrame:self.view.bounds];
     self.webView.delegate = self.progressManager;
@@ -264,6 +265,14 @@
     self.webView.opaque = YES;
     [self.view addSubview:self.webView];
 
+    // configure navigationBar
+    self.navigationController.navigationBar.barStyle = UIBarStyleBlack;
+    self.navigationController.navigationBar.barTintColor = [UIColor colorWithRed:0.0/255.0f green:0.0/255.0f blue:0.0/255.0f alpha:1.0];
+    self.navigationController.navigationBar.titleTextAttributes = @{
+        NSFontAttributeName: [UIFont fontWithName:@"Helvetica" size:20.0],
+        NSForegroundColorAttributeName: [UIColor whiteColor]
+    };
+
     CGFloat progressBarHeight = LOADING_BAR_HEIGHT;
     CGRect navigationBarBounds = self.navigationController.navigationBar.bounds;
     CGRect barFrame = CGRectMake(0, navigationBarBounds.size.height - progressBarHeight, navigationBarBounds.size.width, progressBarHeight);
@@ -271,8 +280,8 @@
     self.progressView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleTopMargin;
     if (self.loadingBarTintColor)
         self.progressView.progressBarView.backgroundColor = self.loadingBarTintColor;
-    
-    
+
+
     //only load the buttons if we need to
     if (self.navigationButtonsHidden == NO)
         [self setUpNavigationButtons];
@@ -286,28 +295,28 @@
         self.backButton = [[UIBarButtonItem alloc] initWithImage:backButtonImage style:UIBarButtonItemStylePlain target:self action:@selector(backButtonTapped:)];
         self.backButton.tintColor = self.buttonTintColor;
     }
-    
+
     //set up the forward button
     if (self.forwardButton == nil) {
         UIImage *forwardButtonImage = [UIImage TOWebViewControllerIcon_forwardButtonWithAttributes:self.buttonThemeAttributes];
         self.forwardButton  = [[UIBarButtonItem alloc] initWithImage:forwardButtonImage style:UIBarButtonItemStylePlain target:self action:@selector(forwardButtonTapped:)];
         self.forwardButton.tintColor = self.buttonTintColor;
     }
-    
+
     //set up the reload button
     if (self.reloadStopButton == nil) {
         self.reloadIcon = [UIImage TOWebViewControllerIcon_refreshButtonWithAttributes:self.buttonThemeAttributes];
         self.stopIcon   = [UIImage TOWebViewControllerIcon_stopButtonWithAttributes:self.buttonThemeAttributes];
-        
+
         self.reloadStopButton = [[UIBarButtonItem alloc] initWithImage:self.reloadIcon style:UIBarButtonItemStylePlain target:self action:@selector(reloadStopButtonTapped:)];
         self.reloadStopButton.tintColor = self.buttonTintColor;
     }
-    
+
     //if desired, show the action button
     if (self.showActionButton && self.actionButton == nil) {
         self.actionButton = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemAction target:self action:@selector(actionButtonTapped:)];
         self.actionButton.tintColor = self.buttonTintColor;
-        
+
         if (MINIMAL_UI) {
             CGFloat topInset = -2.0f;
             self.actionButton.imageInsets = UIEdgeInsetsMake(topInset, 0.0f, -topInset, 0.0f);
@@ -331,11 +340,11 @@
                 [view setHidden:YES];
         }
     }
-    
+
     //if we are hiding the web view boundaries, hide the gradient layer
     if (self.hideWebViewBoundaries)
         self.gradientLayer.hidden = YES;
-    
+
     // Create the Done button
     if (self.showDoneButton && self.beingPresentedModally && !self.onTopOfNavigationControllerStack) {
         if (self.doneButtonTitle) {
@@ -348,8 +357,15 @@
                                                                                         target:self
                                                                                         action:@selector(doneButtonTapped:)];
         }
-        
+
         self.doneButton.tintColor = self.buttonTintColor;
+    }
+
+    if (self.showCloseButton && self.beingPresentedModally && !self.onTopOfNavigationControllerStack) {
+        self.closeButton = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemStop
+                                                                            target:self
+                                                                            action:@selector(doneButtonTapped:)];
+        self.closeButton.tintColor = [UIColor whiteColor];
     }
 }
 
@@ -357,21 +373,21 @@
 - (void)viewWillAppear:(BOOL)animated
 {
     [super viewWillAppear:animated];
-    
+
     //Capture the present navigation controller state to restore at the end
     if (self.navigationController && !self.capturedNavigationControllerState) {
         self.hideToolbarOnClose = self.navigationController.toolbarHidden;
         self.hideNavBarOnClose  = self.navigationBar.hidden;
         self.capturedNavigationControllerState = YES;
     }
-    
+
     //reset the gradient layer in case the bounds changed before display
     self.gradientLayer.frame = self.view.bounds;
-    
+
     //Add the progress bar
     [self.navigationController.navigationBar addSubview:self.progressView];
     [self.progressView setProgress:0.0f];
-    
+
     //Layout the buttons
     [UIView performWithoutAnimation:^{
         [self layoutButtonsForCurrentSizeClass];
@@ -392,12 +408,12 @@
 - (void)viewWillDisappear:(BOOL)animated
 {
     [super viewWillDisappear:animated];
-    
+
     if (self.beingPresentedModally == NO) {
         [self.navigationController setToolbarHidden:self.hideToolbarOnClose animated:animated];
         [self.navigationController setNavigationBarHidden:self.hideNavBarOnClose animated:animated];
     }
-    
+
     [self.progressView removeFromSuperview];
 }
 
@@ -411,13 +427,14 @@
 {
     if (self.webViewRotationSnapshot)
         return NO;
-    
+
     return YES;
 }
 
 - (UIStatusBarStyle)preferredStatusBarStyle
 {
-    return UIStatusBarStyleDefault;
+    // return UIStatusBarStyleDefault;
+    return UIStatusBarStyleLightContent;
 }
 
 #pragma mark - Screen Rotation Interface -
@@ -425,7 +442,7 @@
 {
     if (self.webViewRotationSnapshot)
         return NO;
-    
+
     return YES;
 }
 
@@ -439,7 +456,7 @@
 {
     //reset the gradient layer's frame to match the new bounds
     self.gradientLayer.frame = self.view.bounds;
-    
+
     //animate the web view snapshot into the proper place
     [self animateWebViewRotationToOrientation:toInterfaceOrientation withDuration:duration];
 }
@@ -456,7 +473,7 @@
     if (SIZE_CLASSES) {
         return (self.traitCollection.horizontalSizeClass == UIUserInterfaceSizeClassCompact);
     }
-    
+
     return (UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPhone);
 }
 
@@ -476,10 +493,10 @@
 {
     if (self.navigationController == nil)
         return NO;
-    
+
     if ([self.navigationController.viewControllers count] && [self.navigationController.viewControllers indexOfObject:self] > 0)
         return YES;
-    
+
     return NO;
 }
 
@@ -489,12 +506,12 @@
     CGSize viewSize = self.view.frame.size;
     NSInteger viewHeight = MAX(viewSize.width, viewSize.height);
     NSInteger viewWidth = MIN(viewSize.width, viewSize.height);
-    
+
     //Screen size
     CGSize screenSize = [[UIScreen mainScreen] bounds].size;
     NSInteger screenHeight = MAX(screenSize.width, screenSize.height);
     NSInteger screenWidth = MIN(screenSize.width, screenSize.height);
-    
+
     return !(viewHeight == screenHeight && viewWidth == screenWidth);
 }
 
@@ -502,13 +519,13 @@
 - (void)layoutButtonsForCurrentSizeClass
 {
     [self.navigationController setToolbarHidden:(!self.compactPresentation || self.navigationButtonsHidden) animated:NO];
-        
+
     //Reset the lot
     self.toolbarItems = nil;
     self.navigationItem.leftBarButtonItems = nil;
     self.navigationItem.rightBarButtonItems = nil;
     self.navigationItem.leftItemsSupplementBackButton = NO;
-    
+
     //If we've got explicitly set application items in the navigation bar, set them up before handling screen cases
     if (self.applicationLeftBarButtonItems) {
         self.navigationItem.leftBarButtonItems = self.applicationLeftBarButtonItems;
@@ -517,12 +534,15 @@
 
     //Handle iPhone Layout
     if (self.compactPresentation) {
-        
+
         // Set up the Done button if presented modally
+        if (self.closeButton) {
+            self.navigationItem.rightBarButtonItem = self.closeButton;
+        }
         if (self.doneButton) {
             self.navigationItem.rightBarButtonItem = self.doneButton;
         }
-        
+
         // If there are no navigation buttons, and only one auxiliary button, just place that
         // opposite of the done button
         if (self.navigationButtonsHidden && self.applicationBarButtonItems.count == 1) {
@@ -535,69 +555,69 @@
             else {
                 self.navigationItem.rightBarButtonItem = self.applicationBarButtonItems.firstObject;
             }
-            
+
             return;
         }
-        
+
         //Don't bother with laying out any other buttons if they're all disabled
         if (self.navigationButtonsHidden && self.applicationBarButtonItems.count == 0) {
             return;
         }
-        
+
         //Set up array of buttons
         NSMutableArray *items = [NSMutableArray array];
-        
+
         if (self.navigationButtonsHidden == NO) {
             if (self.backButton)        { [items addObject:self.backButton]; }
             if (self.forwardButton)     { [items addObject:self.forwardButton]; }
             if (self.reloadStopButton)  { [items addObject:self.reloadStopButton]; }
-            
+
             for (UIBarButtonItem *item in self.applicationBarButtonItems) {
                 [items addObject:item];
             }
-            
+
             if (self.actionButton)      { [items addObject:self.actionButton]; }
         }
-        
+
         UIBarButtonItem *(^flexibleSpace)() = ^{
             return [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemFlexibleSpace target:nil action:nil];
         };
-        
+
         BOOL lessThanFiveItems = items.count < 5;
-        
+
         NSInteger index = 1;
         NSInteger itemsCount = items.count-1;
         for (NSInteger i = 0; i < itemsCount; i++) {
             [items insertObject:flexibleSpace() atIndex:index];
             index += 2;
         }
-        
+
         if (lessThanFiveItems) {
             [items insertObject:flexibleSpace() atIndex:0];
             [items addObject:flexibleSpace()];
         }
-        
+
         self.toolbarItems = items;
-        
+
         return;
     }
-    
+
     //Handle iPad layout
     BOOL modal = self.beingPresentedModally;
     NSMutableArray *leftItems = self.applicationLeftBarButtonItems ? [NSMutableArray arrayWithArray:self.navigationItem.leftBarButtonItems] : [NSMutableArray array];
-    
+
     NSMutableArray *rightItems = [NSMutableArray array];
     UIBarButtonItem *fixedSpace = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemFixedSpace target:nil action:nil];
     fixedSpace.width = NAVIGATION_ICON_SPACING;
-    
+
     if (modal) {
         if (self.backButton)        { [leftItems addObject:self.backButton];        [leftItems addObject:fixedSpace]; }
         if (self.forwardButton)     { [leftItems addObject:self.forwardButton];     [leftItems addObject:fixedSpace]; }
         if (self.reloadStopButton)  { [leftItems addObject:self.reloadStopButton];  [leftItems addObject:fixedSpace]; }
-        
+
         if (self.doneButton)        { [rightItems addObject:self.doneButton];       [rightItems addObject:fixedSpace]; }
         if (self.actionButton)      { [rightItems addObject:self.actionButton];     [rightItems addObject:fixedSpace]; }
-        
+
         for (UIBarButtonItem *item in self.applicationBarButtonItems) {
             [rightItems addObject:item];
             [rightItems addObject:fixedSpace];
@@ -606,17 +626,17 @@
     else {
         [leftItems addObject:fixedSpace];
         if (self.actionButton)      { [leftItems addObject:self.actionButton];      [leftItems addObject:fixedSpace]; }
-        
+
         if (self.reloadStopButton)  { [rightItems addObject:self.reloadStopButton]; [rightItems addObject:fixedSpace]; }
         if (self.forwardButton)     { [rightItems addObject:self.forwardButton];    [rightItems addObject:fixedSpace]; }
         if (self.backButton)        { [rightItems addObject:self.backButton];       [rightItems addObject:fixedSpace]; }
-        
+
         for (UIBarButtonItem *item in self.applicationBarButtonItems) {
             [leftItems addObject:item];
             [leftItems addObject:fixedSpace];
         }
     }
-    
+
     self.navigationItem.leftBarButtonItems = leftItems;
     self.navigationItem.leftItemsSupplementBackButton = YES;
     self.navigationItem.rightBarButtonItems = rightItems;
@@ -640,15 +660,15 @@
 {
     if (self.url == url)
         return;
-    
+
     _url = [self cleanURL:url];
-    
+
     if (self.webView.loading)
         [self.webView stopLoading];
-    
+
     [self.urlRequest setURL:self.url];
     [self.webView loadRequest:self.urlRequest];
-    
+
     [self showPlaceholderTitle];
 }
 
@@ -657,9 +677,9 @@
     if (loadingBarTintColor == _loadingBarTintColor) {
         return;
     }
-    
+
     _loadingBarTintColor = loadingBarTintColor;
-    
+
     if (self.progressView) {
         self.progressView.progressBarView.backgroundColor = _loadingBarTintColor;
     }
@@ -669,7 +689,7 @@
 {
     if (self.navigationController)
         return self.navigationController.navigationBar;
-    
+
     return nil;
 }
 
@@ -677,10 +697,10 @@
 {
     if (!self.compactPresentation)
         return nil;
-    
+
     if (self.navigationController)
         return self.navigationController.toolbar;
-    
+
     return nil;
 }
 
@@ -688,9 +708,9 @@
 {
     if (navigationButtonsHidden == _navigationButtonsHidden)
         return;
-    
+
     _navigationButtonsHidden = navigationButtonsHidden;
-    
+
     if (_navigationButtonsHidden) {
         self.backButton = nil;
         self.forwardButton = nil;
@@ -702,7 +722,7 @@
     else {
         [self setUpNavigationButtons];
     }
-    
+
      [self layoutButtonsForCurrentSizeClass];
 }
 
@@ -710,9 +730,9 @@
 {
     if (buttonTintColor == _buttonTintColor)
         return;
-    
+
     _buttonTintColor = buttonTintColor;
-    
+
     if (MINIMAL_UI) {
         self.backButton.tintColor = _buttonTintColor;
         self.forwardButton.tintColor = _buttonTintColor;
@@ -723,7 +743,7 @@
     else {
         if (self.buttonThemeAttributes == nil)
             self.buttonThemeAttributes = [NSMutableDictionary dictionary];
-        
+
         self.buttonThemeAttributes[TOWebViewControllerButtonTintColor] = _buttonTintColor;
         [self setUpNavigationButtons];
     }
@@ -733,12 +753,12 @@
 {
     if (buttonBevelOpacity == _buttonBevelOpacity)
         return;
-    
+
     _buttonBevelOpacity = buttonBevelOpacity;
-    
+
     if (self.buttonThemeAttributes == nil)
         self.buttonThemeAttributes = [NSMutableDictionary dictionary];
-    
+
     self.buttonThemeAttributes[TOWebViewControllerButtonBevelOpacity] = @(_buttonBevelOpacity);
     [self setUpNavigationButtons];
 }
@@ -747,9 +767,9 @@
 {
     if (applicationBarButtonItems == _applicationBarButtonItems)
         return;
-    
+
     _applicationBarButtonItems = applicationBarButtonItems;
-    
+
     if (self.presentingViewController && self.compactPresentation) {
         [self layoutButtonsForCurrentSizeClass];
     }
@@ -759,13 +779,13 @@
 {
     if (loadCompletedApplicationBarButtonItems == _loadCompletedApplicationBarButtonItems)
         return;
-    
+
     _loadCompletedApplicationBarButtonItems = loadCompletedApplicationBarButtonItems;
-    
+
     //Set disabled initially until we can confirm the load state of the web view
     for (UIBarButtonItem *item in _loadCompletedApplicationBarButtonItems)
         item.enabled = NO;
-    
+
     [self refreshButtonsState];
 }
 
@@ -774,7 +794,7 @@
     if (applicationLeftBarButtonItems == _applicationLeftBarButtonItems) {
         return;
     }
-    
+
     _applicationLeftBarButtonItems = applicationLeftBarButtonItems;
     [self refreshButtonsState];
 }
@@ -784,13 +804,13 @@
 - (BOOL)webView:(UIWebView *)webView shouldStartLoadWithRequest:(NSURLRequest *)request navigationType:(UIWebViewNavigationType)navigationType
 {
     BOOL shouldStart = YES;
-    
+
     //If a request handler has been set, check to see if we should go ahead
     if (self.shouldStartLoadRequestHandler)
         shouldStart = self.shouldStartLoadRequestHandler(request, navigationType);
-    
+
     //TODO: Implement TOModalWebViewController Delegate callback
-    
+
     return shouldStart;
 }
 
@@ -798,7 +818,7 @@
 {
     //show that loading started in the status bar
     [[UIApplication sharedApplication] setNetworkActivityIndicatorVisible:YES];
-    
+
     //update the navigation bar buttons
     [self refreshButtonsState];
 }
@@ -813,10 +833,10 @@
 -(void)webViewProgress:(NJKWebViewProgress *)webViewProgress updateProgress:(float)progress
 {
     [self.progressView setProgress:progress animated:YES];
-    
+
     //Query the webview to see what load state JavaScript perceives it at
     NSString *readyState = [self.webView stringByEvaluatingJavaScriptFromString:@"document.readyState"];
-    
+
     //interactive means the page has loaded sufficiently to allow user interaction now
     BOOL interactive = [readyState isEqualToString:@"interactive"];
     BOOL complete = [readyState isEqualToString:@"complete"];
@@ -825,20 +845,20 @@
         //see if we can set the proper page title yet
         if (self.showPageTitles) {
             NSString *title = [self.webView stringByEvaluatingJavaScriptFromString:@"document.title"];
-            
+
             if (title.length)
                 self.title = title;
         }
-        
+
         //if we're matching the view BG to the web view, update the background colour now
         if (self.hideWebViewBoundaries)
             self.view.backgroundColor = [self webViewPageBackgroundColor];
-        
+
         //finally, if the app desires it, disable the ability to tap and hold on links
         if (self.disableContextualPopupMenu)
             [self.webView stringByEvaluatingJavaScriptFromString:@"document.body.style.webkitTouchCallout='none';"];
     }
-    
+
     [self refreshButtonsState];
 }
 
@@ -851,15 +871,15 @@
         [self.backButton setEnabled:YES];
     else
         [self.backButton setEnabled:NO];
-    
+
     //Forward button
     if (self.webView.canGoForward)
         [self.forwardButton setEnabled:YES];
     else
         [self.forwardButton setEnabled:NO];
-    
+
     BOOL loaded = (self.progressManager.progress >= 1.0f - FLT_EPSILON);
-    
+
     //Stop/Reload Button
     if (!loaded) {
         [[UIApplication sharedApplication] setNetworkActivityIndicatorVisible:YES];
@@ -869,14 +889,14 @@
         [[UIApplication sharedApplication] setNetworkActivityIndicatorVisible:NO];
         self.reloadStopButton.image = self.reloadIcon;
     }
-    
+
     //Any potential user-specified buttons
     if (self.loadCompletedApplicationBarButtonItems) {
         BOOL enabled = NO;
         if (loaded && self.webView.request.URL.absoluteURL) {
             enabled = YES;
         }
-        
+
         for (UIBarButtonItem *item in self.loadCompletedApplicationBarButtonItems) {
             item.enabled = enabled;
         }
@@ -914,10 +934,10 @@
 - (void)reloadStopButtonTapped:(id)sender
 {
     BOOL loaded = (self.progressManager.progress >= 1.0f - FLT_EPSILON);
-    
+
     //regardless of reloading, or stopping, halt the webview
     [self.webView stopLoading];
-    
+
     if (loaded) {
         //In certain cases, if the connection drops out preload or midload,
         //it nullifies webView.request, which causes [webView reload] to stop working.
@@ -931,7 +951,7 @@
             [self.webView reload];
         }
     }
-    
+
     //refresh the buttons
     [self refreshButtonsState];
 }
@@ -961,7 +981,7 @@
     {
         NSArray *browserActivities = @[[TOActivitySafari new], [TOActivityChrome new]];
         UIActivityViewController *activityViewController = [[UIActivityViewController alloc] initWithActivityItems:@[self.url] applicationActivities:browserActivities];
-        
+
         if (UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPhone)
         {
             //If we're on an iPhone, we can just present it modally
@@ -976,10 +996,10 @@
                 [self.sharingPopoverController dismissPopoverAnimated:NO];
                 self.sharingPopoverController = nil;
             }
-            
+
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-            
+
             //Create the sharing popover controller
             self.sharingPopoverController = [[UIPopoverController alloc] initWithContentViewController:activityViewController];
             self.sharingPopoverController.delegate = self;
@@ -993,7 +1013,7 @@
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-        
+
         UIActionSheet *actionSheet = [[UIActionSheet alloc] initWithTitle:nil
                                                                  delegate:self
                                                         cancelButtonTitle:nil
@@ -1007,29 +1027,29 @@
         NSString *browserMessage = NSLocalizedStringFromTable(@"Open in Safari", @"TOWebViewControllerLocalizable", @"Open in Safari");
         if (chromeIsInstalled)
             browserMessage = NSLocalizedStringFromTable(@"Open in Chrome", @"TOWebViewControllerLocalizable", @"Open in Chrome");
-        
+
         [actionSheet addButtonWithTitle:browserMessage];
         numberOfButtons++;
-        
+
         //Add Email
         if ([MFMailComposeViewController canSendMail]) {
             [actionSheet addButtonWithTitle:NSLocalizedStringFromTable(@"Mail", @"TOWebViewControllerLocalizable", @"Send Email")];
             numberOfButtons++;
         }
-        
+
         //Add SMS
         if ([MFMessageComposeViewController canSendText]) {
             [actionSheet addButtonWithTitle:NSLocalizedStringFromTable(@"Message", @"TOWebViewControllerLocalizable", @"Send iMessage")];
             numberOfButtons++;
         }
-        
+
         //Add Twitter
         if ([TWTweetComposeViewController canSendTweet]) {
             [actionSheet addButtonWithTitle:NSLocalizedStringFromTable(@"Twitter", @"TOWebViewControllerLocalizable", @"Send a Tweet")];
             numberOfButtons++;
         }
 
-        
+
         //Add a cancel button if on iPhone
         if (self.compactPresentation) {
             [actionSheet addButtonWithTitle:NSLocalizedStringFromTable(@"Cancel", @"TOWebViewControllerLocalizable", @"Cancel")];
@@ -1039,7 +1059,7 @@
         else {
             [actionSheet showFromRect:[(UIView *)sender frame] inView:[(UIView *)sender superview] animated:YES];
         }
-        
+
         #pragma clang diagnostic pop
     }
 }
@@ -1104,11 +1124,11 @@
 {
     BOOL chromeIsInstalled = [[UIApplication sharedApplication] canOpenURL:[NSURL URLWithString:@"googlechrome://"]];
     NSURL *inputURL = self.webView.request.URL;
-    
+
     if (chromeIsInstalled)
     {
         NSString *scheme = inputURL.scheme;
-        
+
         // Replace the URL Scheme with the Chrome equivalent.
         NSString *chromeScheme = nil;
         if ([scheme isEqualToString:@"http"])
@@ -1119,7 +1139,7 @@
         {
             chromeScheme = @"googlechromes";
         }
-        
+
         // Proceed only if a valid Google Chrome URI Scheme is available.
         if (chromeScheme)
         {
@@ -1128,14 +1148,14 @@
             NSString *urlNoScheme       = [absoluteString substringFromIndex:rangeForScheme.location];
             NSString *chromeURLString   = [chromeScheme stringByAppendingString:urlNoScheme];
             NSURL *chromeURL            = [NSURL URLWithString:chromeURLString];
-            
+
             // Open the URL with Chrome.
             [[UIApplication sharedApplication] openURL:chromeURL];
-            
+
             return;
         }
     }
-    
+
     //If all else fails (Or Chrome is simply not installed), open as per usual
     [[UIApplication sharedApplication] openURL:inputURL];
 }
@@ -1186,7 +1206,7 @@
         if ([NSStringFromClass([view class]) rangeOfString:@"WebBrowser"].location != NSNotFound)
             return view;
     }
-    
+
     return nil;
 }
 
@@ -1201,30 +1221,30 @@
                                 @"}"
                                 @"}"
                                 @"})()";
-    
+
     NSString *pageViewPortContent = [self.webView stringByEvaluatingJavaScriptFromString:metaDataQuery];
     if ([pageViewPortContent length] == 0)
         return NO;
-    
+
     //remove all white space and make sure it's all lower case
     pageViewPortContent = [[pageViewPortContent stringByReplacingOccurrencesOfString:@" " withString:@""] lowercaseString];
-    
+
     //check if the max page zoom is locked at 1
     if ([pageViewPortContent rangeOfString:@"maximum-scale=1"].location != NSNotFound)
         return YES;
-    
+
     //check if zooming is intentionally disabled
     if ([pageViewPortContent rangeOfString:@"user-scalable=no"].location != NSNotFound)
         return YES;
-    
+
     //check if width is set to align to the width of the device
     if ([pageViewPortContent rangeOfString:@"width=device-width"].location != NSNotFound)
         return YES;
-    
+
     //check if initial scale is being forced (Apple seem to blanket apply this in Safari)
     if ([pageViewPortContent rangeOfString:@"initial-scale=1"].location != NSNotFound)
         return YES;
-    
+
     return NO;
 }
 
@@ -1232,13 +1252,13 @@
 {
     //Pull the current background colour from the web view
     NSString *rgbString = [self.webView stringByEvaluatingJavaScriptFromString:@"window.getComputedStyle(document.body,null).getPropertyValue('background-color');"];
-    
+
     //if it wasn't found, or if it isn't a proper rgb value, just return white as the default
     if ([rgbString length] == 0 || [rgbString rangeOfString:@"rgb"].location == NSNotFound)
         return [UIColor whiteColor];
-    
+
     //Assuming now the input is either 'rgb(255, 0, 0)' or 'rgba(255, 0, 0, 255)'
-    
+
     //remove the 'rgba' componenet
     rgbString = [rgbString stringByReplacingOccurrencesOfString:@"rgba" withString:@""];
     //conversely, remove the 'rgb' component
@@ -1248,24 +1268,24 @@
     rgbString = [rgbString stringByReplacingOccurrencesOfString:@")" withString:@""];
     //remove all spaces
     rgbString = [rgbString stringByReplacingOccurrencesOfString:@" " withString:@""];
-    
+
     //we should now have something like '0,0,0'. Split it up via the commas
     NSArray *componenets = [rgbString componentsSeparatedByString:@","];
-    
+
     //Final output componenets
     CGFloat red, green, blue, alpha = 1.0f;
-    
+
     //if the alpha value is 0, this indicates the RGB value wasn't actually set in the page, so just return white
     if ([componenets count] < 3 || ([componenets count] >= 4 && [[componenets objectAtIndex:3] integerValue] == 0))
         return [UIColor whiteColor];
-    
+
     red     = (CGFloat)[[componenets objectAtIndex:0] integerValue] / 255.0f;
     green   = (CGFloat)[[componenets objectAtIndex:1] integerValue] / 255.0f;
     blue    = (CGFloat)[[componenets objectAtIndex:2] integerValue] / 255.0f;
-    
+
     if ([componenets count] >= 4)
         alpha = (CGFloat)[[componenets objectAtIndex:3] integerValue] / 255.0f;
-    
+
     return [UIColor colorWithRed:red green:green blue:blue alpha:alpha];
 }
 
@@ -1278,7 +1298,7 @@
     CGSize  webViewSize     = self.webView.bounds.size;
     CGSize  contentSize     = self.webView.scrollView.contentSize;
     CGFloat topInset        = self.webView.scrollView.contentInset.top;
-    
+
     //we're in portrait now, target orientation is landscape
     //(So since we're zooming in, we don't need to worry about content outside the visible boundaries)
     if (UIInterfaceOrientationIsLandscape(toInterfaceOrientation))
@@ -1286,7 +1306,7 @@
         //save the current scroll offset and size of the web view
         rect.origin = contentOffset;
         rect.size   = webViewSize;
-        
+
         //There's no point in capturing content beyond the scroll content bounds (eg edgeInsets)
         //Clip the rect to the scrollbounds
         if (contentOffset.y < 0.0f + FLT_EPSILON) {
@@ -1305,16 +1325,16 @@
         if (MINIMAL_UI == NO) {
             if (self.navigationBar)
                 heightInPortraitMode -= 44.0f;
-            
+
             if (self.toolbar)
                 heightInPortraitMode -= 44.0f;
-            
+
             if ([UIApplication sharedApplication].statusBarHidden == NO)
                 heightInPortraitMode -= [[UIApplication sharedApplication] statusBarFrame].size.width;
         }
-        
+
         CGSize  contentSize   = self.webView.scrollView.contentSize;
-        
+
         if ([self webViewPageWidthIsDynamic])
         {
             //set the content offset for the view to be rendered
@@ -1323,7 +1343,7 @@
                 rect.origin.y = contentSize.height - heightInPortraitMode;
                 rect.origin.y = MAX(rect.origin.y, -self.webView.scrollView.contentInset.top);
             }
-            
+
             rect.size.width = webViewSize.width;
             rect.size.height = heightInPortraitMode; //make it as tall as it is wide
         }
@@ -1331,37 +1351,37 @@
         {
             //set the scroll offset
             rect.origin = contentOffset;
-            
+
             //The height of the region we're animating to, in the same space as the current content
             CGFloat portraitWidth = webViewSize.height;
             if (MINIMAL_UI == NO) {
                 if (self.navigationBar)
                     portraitWidth += CGRectGetHeight(self.navigationBar.frame);
-                
+
                 if (self.toolbar)
                     portraitWidth += CGRectGetHeight(self.toolbar.frame);
-                
+
                 if ([UIApplication sharedApplication].statusBarHidden == NO)
                     heightInPortraitMode -= [[UIApplication sharedApplication] statusBarFrame].size.width;
             }
-            
+
             CGFloat scaledHeight = heightInPortraitMode * (webViewSize.width / portraitWidth);
-            
+
             //assume we're animating outwards with the visible region being the center.
             //so make sure to capture everything above and below it
             rect.origin.y = (contentOffset.y+(webViewSize.height*0.5f)) - (scaledHeight*0.5f);
-            
+
             //if this takes us past the visible region, clamp it
             if (rect.origin.y < 0)
                 rect.origin.y = 0;
             else if (rect.origin.y + scaledHeight > contentSize.height)
                 rect.origin.y = contentSize.height - scaledHeight;
-            
+
             rect.size.width = webViewSize.width;
             rect.size.height = scaledHeight;
         }
     }
-    
+
     return rect;
 }
 
@@ -1372,18 +1392,18 @@
     if (self.splitScreenEnabled) {
         return;
     }
-    
+
     // form sheet style controllers' bounds don't change, so none of this is necessary
     if (!self.compactPresentation && self.modalPresentationStyle == UIModalPresentationFormSheet)
         return;
-    
+
     //if there's already a snapshot in place (shouldn't be possible), just in case, remove it
     if (self.webViewRotationSnapshot)
     {
         [self.webViewRotationSnapshot removeFromSuperview];
         self.webViewRotationSnapshot = nil;
     }
-    
+
     //Save the current state so we can use it to properly transition after the rotation is complete
     _webViewState.frameSize         = self.webView.frame.size;
     _webViewState.contentSize       = self.webView.scrollView.contentSize;
@@ -1393,12 +1413,12 @@
     _webViewState.maximumZoomScale  = self.webView.scrollView.maximumZoomScale;
     _webViewState.topEdgeInset      = self.webView.scrollView.contentInset.top;
     _webViewState.bottomEdgeInset   = self.webView.scrollView.contentInset.bottom;
-    
+
     UIView  *webContentView         = [self webViewContentView];
     UIColor *pageBackgroundColor    = [self webViewPageBackgroundColor];
     UIColor *webViewBackgroundColor = [self view].backgroundColor;
     CGRect  renderBounds            = [self rectForVisibleRegionOfWebViewAnimatingToOrientation:toOrientation];
-    
+
     //generate a snapshot of the webview that we can animate more smoothly
     CGFloat scale = 1.75f;
     UIGraphicsBeginImageContextWithOptions(renderBounds.size, YES, scale);
@@ -1417,10 +1437,10 @@
         self.webViewRotationSnapshot = [[UIImageView alloc] initWithImage:image];
     }
     UIGraphicsEndImageContext();
-    
+
     //work out the starting frame for the snapshot based on page state and current orientation
     CGRect frame = (CGRect){CGPointZero, renderBounds.size};
-    
+
     //If we're presently portrait, and animating to landscape
     if (UIInterfaceOrientationIsLandscape(toOrientation))
     {
@@ -1433,7 +1453,7 @@
         else {
             self.webViewRotationSnapshot.contentMode = UIViewContentModeScaleAspectFill;
         }
-        
+
         //if we have a content inset along the top, line up the image along the proper inset
         if (_webViewState.contentOffset.y < 0.0f) {
             frame.origin.y = _webViewState.topEdgeInset - (_webViewState.topEdgeInset + _webViewState.contentOffset.y);
@@ -1446,7 +1466,7 @@
         if ([self webViewPageWidthIsDynamic])
         {
             self.webViewRotationSnapshot.backgroundColor = pageBackgroundColor;
-            
+
             //if the landscape scrolloffset is outside the bounds of the portrait mode, animate from the bottom to line it up properly
             CGFloat heightInPortraitMode = CGRectGetWidth(self.webView.frame);
             if (self.webView.scrollView.contentOffset.y + heightInPortraitMode > self.webView.scrollView.contentSize.height )
@@ -1457,15 +1477,15 @@
         else
         {
             self.webViewRotationSnapshot.contentMode = UIViewContentModeScaleAspectFill;
-            
+
             frame.size  = self.webViewRotationSnapshot.image.size;
-            
+
             if ((_webViewState.contentOffset.y + _webViewState.topEdgeInset) > FLT_EPSILON) {
                 //Work out the content offset of the snapshot view if we positioned it over the middle of the web view
                 CGFloat webViewMidPoint  = _webViewState.contentOffset.y + (_webViewState.frameSize.height * 0.5f);
                 CGFloat topContentOffset = webViewMidPoint - (renderBounds.size.height * 0.5f);
                 CGFloat bottomContentOffset = webViewMidPoint + (renderBounds.size.height * 0.5f);
-                
+
                 if (topContentOffset < -_webViewState.topEdgeInset) {
                     frame.origin.y = -_webViewState.contentOffset.y;
                 }
@@ -1482,29 +1502,29 @@
             }
         }
     }
-    
+
     self.webViewRotationSnapshot.frame = frame;
     [self.view insertSubview:self.webViewRotationSnapshot aboveSubview:self.webView];
-    
-    
+
+
     //This is a dirty, dirty, DIRTY hack. When a UIWebView's frame changes (At least on iOS 6), in certain conditions,
     //the content view will NOT resize with it. This can result in visual artifacts, such as black bars up the side,
     //and weird touch feedback like not being able to properly zoom out until the user has first zoomed in and released the touch.
     //So far, the only way I've found to actually correct this is to invoke a trivial zoom animation, and this will
     //trip the webview into redrawing its content.
     //Once the view has finished rotating, we'll figure out the proper placement + zoom scale and reset it.
-    
+
     //UPDATE: Looks like it's no longer necessary in iOS 8! :)
-    
+
     if (SIZE_CLASSES == NO) {
         //This animation must be complete by the time the view rotation animation is complete, else we'll have incorrect bounds data. This will speed it up to near instant.
         self.webView.scrollView.layer.speed = 9999.0f;
-        
+
         //zoom into the mid point of the scale. Zooming into either extreme doesn't work.
         CGFloat zoomScale = (self.webView.scrollView.minimumZoomScale+self.webView.scrollView.maximumZoomScale) * 0.5f;
         [self.webView.scrollView setZoomScale:zoomScale animated:YES];
     }
-        
+
     //hide the webview while the snapshot is animating
     self.webView.hidden = YES;
 }
@@ -1516,24 +1536,24 @@
     if (self.splitScreenEnabled) {
         return;
     }
-    
+
     // form sheet style controllers' bounds don't change, so implemeting this is rather pointless
     if (!self.compactPresentation && self.modalPresentationStyle == UIModalPresentationFormSheet)
         return;
-    
+
     //remove all animations presently applied to the web view
     [self.webView.layer removeAllAnimations];
     [self.webView.scrollView.layer removeAllAnimations];
-    
+
     //animate the image view rotating to the proper dimensions
     CGRect frame = self.webView.bounds;
-    
+
     //We only need to scale/translate the image view if the web page has a static width
     if ([self webViewPageWidthIsDynamic] == NO)
     {
         CGFloat scale = CGRectGetHeight(self.webViewRotationSnapshot.frame)/CGRectGetWidth(self.webViewRotationSnapshot.frame);
         frame.size.height = CGRectGetWidth(frame) * scale;
-        
+
         //If we're not scrolled at the very top, animate towards the center of the view.
         //If we're at either extreme (top or bottom) where rotating from the centre would
         //push us past oour scroll bounds, lock the snapshot to the necessary edge
@@ -1545,7 +1565,7 @@
             CGFloat webViewOffsetOrigin = (_webViewState.contentOffset.y + (_webViewState.frameSize.height * 0.5f)); //the content offset of the middle of the web view
             CGFloat topContentOffset = webViewOffsetOrigin - (destinationHeight * 0.5f); // in the pre-animated space, the top content offset
             CGFloat bottomContentOffset = webViewOffsetOrigin + (destinationHeight * 0.5f); // the bottom offset
-            
+
             //adjust as needed to fit the top or bottom
             if (topContentOffset < -_webViewState.topEdgeInset) { //re-align to the top
                 frame.origin.y = self.webView.scrollView.contentInset.top;
@@ -1555,7 +1575,7 @@
             }
             else { //position the webview in the center
                 frame.origin.y = ((destinationBoundsHeight*0.5f) - (CGRectGetHeight(frame)*0.5f));
-                
+
                 //If we're partially scrolled below zero, then the snapshot will need to be offset to account for its smaller size
                 if (_webViewState.contentOffset.y < 0.0f) {
                     CGFloat delta = _webViewState.topEdgeInset - (_webViewState.topEdgeInset + _webViewState.contentOffset.y);
@@ -1571,19 +1591,19 @@
         //If we're partially scrolled below zero, then the snapshot will need to be offset to account for its smaller size
         if (_webViewState.contentOffset.y < 0.0f) {
             CGFloat delta = _webViewState.topEdgeInset - (_webViewState.topEdgeInset + _webViewState.contentOffset.y);
-            
+
             if (UIInterfaceOrientationIsLandscape(toOrientation))
                 frame.origin.y += delta - (_webViewState.topEdgeInset - self.webView.scrollView.contentInset.top);
             else
                 frame.origin.y -= (_webViewState.topEdgeInset - self.webView.scrollView.contentInset.top);
         }
-        
+
         //ensure the image view stays horizontally aligned to the center when we rotate back to portrait
         if (UIInterfaceOrientationIsPortrait(toOrientation))
             frame.origin.x = floor(CGRectGetWidth(self.view.bounds) * 0.5f) - (CGRectGetWidth(self.webViewRotationSnapshot.frame) * 0.5f);
     }
-    
-    
+
+
     self.webViewRotationSnapshot.frame = frame;
 }
 
@@ -1593,11 +1613,11 @@
     if (self.splitScreenEnabled) {
         return;
     }
-    
+
     /// form sheet style controllers' bounds don't change, so implemeting this isn't required
     if (!self.compactPresentation && self.modalPresentationStyle == UIModalPresentationFormSheet)
         return;
-    
+
     //Side Note: When a UIWebView has just had its bounds change, its minimumZoomScale and maximumZoomScale become completely (almost arbitrarily) different.
     //But, it WILL rest back to minimumZoomScale = 1.0f, after the next time the user interacts with it.
     //For resetting the state right now (as the user hasn't touched it yet), we must use the 'different' values, and translate the original state to them.
@@ -1607,23 +1627,23 @@
     //So to solve this, we're accessing the core animation layer and temporarily increasing the animation speed of the scrollview.
     //The zoom event is still occurring, but it's so fast, it seems instant
     CGFloat translatedScale = ((_webViewState.zoomScale/_webViewState.minimumZoomScale) * self.webView.scrollView.minimumZoomScale);
-    
+
     //if we ended up scrolling past the max zoom size, just extend it.
     if (translatedScale > self.webView.scrollView.maximumZoomScale)
         self.webView.scrollView.maximumZoomScale = translatedScale;
-    
+
     //Pull out the animation and attach a delegate so we can receive an event when it's finished, to clean it up properly
     CABasicAnimation *anim = [[self.webView.scrollView.layer animationForKey:@"bounds"] mutableCopy];
     if (SIZE_CLASSES == NO) {
         [self.webView.scrollView.layer removeAllAnimations];
         self.webView.scrollView.layer.speed = 9999.0f;
         [self.webView.scrollView setZoomScale:translatedScale animated:YES];
-        
+
         if (anim == nil) { //anim may be nil if the zoomScale wasn't sufficiently different to warrant an animation
             [self animationDidStop:anim finished:YES];
             return;
         }
-        
+
         [self.webView.scrollView.layer removeAnimationForKey:@"bounds"];
         [anim setDelegate:self];
         [self.webView.scrollView.layer addAnimation:anim forKey:@"bounds"];
@@ -1641,7 +1661,7 @@
 
     CGSize contentSize = self.webView.scrollView.contentSize;
     CGPoint translatedContentOffset = _webViewState.contentOffset;
-    
+
     //if the page is a mobile site, just re-add the original content offset. It'll size itself properly
     if ([self webViewPageWidthIsDynamic])
     {
@@ -1660,7 +1680,7 @@
         //if we were sufficiently scrolled from the top, make sure to line up to the middle, not the top
         if ((_webViewState.contentOffset.y + _webViewState.topEdgeInset) > FLT_EPSILON)
         {
-            
+
             if(UIDeviceOrientationIsLandscape([UIDevice currentDevice].orientation)) {
                 translatedContentOffset.y += (CGRectGetHeight(self.webViewRotationSnapshot.frame)*0.5f) - (CGRectGetHeight(self.webView.frame)*0.5f);
             }
@@ -1671,7 +1691,7 @@
                 CGFloat destinationHeight = destinationBoundsHeight * scale; //the expected height of the visible bounds (in pre-anim rotation scale)
                 CGFloat webViewOffsetOrigin = (_webViewState.contentOffset.y + _webViewState.frameSize.height * 0.5f); //the content offset of the middle of the web view
                 CGFloat bottomContentOffset = webViewOffsetOrigin + (destinationHeight * 0.5f); // the bottom offset
-                
+
                 //If our original state meant we clipped the bottom of the scroll view, just clamp it to the bottom
                 if (bottomContentOffset > _webViewState.contentSize.height)
                     translatedContentOffset.y = self.webView.scrollView.contentSize.height - (CGRectGetHeight(self.webView.frame)) + self.webView.scrollView.contentInset.top;
@@ -1683,24 +1703,24 @@
             translatedContentOffset.y = -self.webView.scrollView.contentInset.top;
         }
     }
-    
+
     //clamp it to the actual scroll region
     translatedContentOffset.x = MAX(translatedContentOffset.x, -self.webView.scrollView.contentInset.left);
     translatedContentOffset.x = MIN(translatedContentOffset.x, contentSize.width - CGRectGetWidth(self.webView.frame));
-    
+
     translatedContentOffset.y = MAX(translatedContentOffset.y, -self.webView.scrollView.contentInset.top);
     translatedContentOffset.y = MIN(translatedContentOffset.y, contentSize.height - (CGRectGetHeight(self.webView.frame) - self.webView.scrollView.contentInset.bottom));
-    
+
     //apply the translated offset (Thankfully, this one doens't have to be animated in order to work properly)
     [self.webView.scrollView setContentOffset:translatedContentOffset animated:NO];
-    
+
     //restore proper scroll speed
     self.webView.scrollView.layer.speed = 1.0f;
-    
+
     //remove the rotation screenshot
     [self.webViewRotationSnapshot removeFromSuperview];
     self.webViewRotationSnapshot = nil;
-    
+
     //Try and restart device rotation
     [UIViewController attemptRotationToDeviceOrientation];
 }
