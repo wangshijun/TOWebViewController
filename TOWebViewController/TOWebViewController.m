@@ -269,7 +269,7 @@
     self.navigationController.navigationBar.barStyle = UIBarStyleBlack;
     self.navigationController.navigationBar.barTintColor = [UIColor colorWithRed:0.0/255.0f green:0.0/255.0f blue:0.0/255.0f alpha:1.0];
     self.navigationController.navigationBar.titleTextAttributes = @{
-        NSFontAttributeName: [UIFont fontWithName:@"Helvetica" size:20.0],
+        NSFontAttributeName: [UIFont fontWithName:@"Helvetica" size:18.0],
         NSForegroundColorAttributeName: [UIColor whiteColor]
     };
 
@@ -906,13 +906,14 @@
 - (void)showPlaceholderTitle
 {
     //set the title to the URL until we load the page properly
-    if (self.url && self.showPageTitles && self.showUrlWhileLoading) {
+    if (self.url && self.showPageTitles && self.showUrlWhileLoading && self.titlePlaceholder) {
+        self.title = self.titlePlaceholder;
+    } else if (self.url && self.showPageTitles && self.showUrlWhileLoading) {
         NSString *url = [_url absoluteString];
         url = [url stringByReplacingOccurrencesOfString:@"http://" withString:@""];
         url = [url stringByReplacingOccurrencesOfString:@"https://" withString:@""];
         self.title = url;
-    }
-    else if (self.showPageTitles) {
+    } else if (self.showPageTitles) {
         self.title = NSLocalizedStringFromTable(@"Loading...", @"TOWebViewControllerLocalizable", @"Loading...");
     }
 }

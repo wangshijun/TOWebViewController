@@ -120,6 +120,7 @@
     webViewController.showActionButton = false;
     webViewController.showDoneButton = false;
     webViewController.showCloseButton = true;
+    webViewController.titlePlaceholder = @"OpenTable";
     webViewController.navigationButtonsHidden = true;
 
 // Uncomment this if you want to test out placing buttons permanently in the left hand side of the navigation bar

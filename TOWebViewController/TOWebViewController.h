@@ -141,6 +141,7 @@
  Default value is YES.
  */
 @property (nonatomic,assign)    BOOL showPageTitles;
+@property (nonatomic,copy)    NSString *titlePlaceholder;
 
 /**
  Disables the contextual popups that can appear when the user taps and holds on a page link.
