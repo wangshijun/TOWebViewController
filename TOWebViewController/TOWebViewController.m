@@ -256,7 +256,8 @@
     }
 
     //Create the web view
-    self.webView = [[UIWebView alloc] initWithFrame:self.view.bounds];
+    CGSize bounds = self.view.bounds.size;
+    self.webView = [[UIWebView alloc] initWithFrame:CGRectMake(0, NAVIGATION_BAR_HEIGHT, bounds.width, bounds.height - NAVIGATION_BAR_HEIGHT)];
     self.webView.delegate = self.progressManager;
     self.webView.autoresizingMask = UIViewAutoresizingFlexibleHeight | UIViewAutoresizingFlexibleWidth;
     self.webView.backgroundColor = [UIColor clearColor];
