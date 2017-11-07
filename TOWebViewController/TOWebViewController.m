@@ -256,7 +256,7 @@
     }
 
     //Create the web view
-    CGFloat webviewOffsetY = [[[UIDevice currentDevice] systemVersion] compare:@"11.0" options:NSNumericSearch] != NSOrderedDescending ? NAVIGATION_BAR_HEIGHT : 0;
+    CGFloat webviewOffsetY = @available(iOS 11, *) ? NAVIGATION_BAR_HEIGHT : 0;
     CGSize bounds = self.view.bounds.size;
     self.webView = [[UIWebView alloc] initWithFrame:CGRectMake(0, webviewOffsetY, bounds.width, bounds.height - webviewOffsetY)];
     self.webView.delegate = self.progressManager;
