@@ -19,7 +19,6 @@
 //  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 //  WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
 //  IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-#include <stdlib.h>
 
 #import "TOWebViewController.h"
 #import "TOActivitySafari.h"
@@ -34,9 +33,6 @@
 #import <MessageUI/MFMailComposeViewController.h>
 #import <MessageUI/MFMessageComposeViewController.h>
 #import <Twitter/Twitter.h>
-
-/* system version compare macros, @link https://stackoverflow.com/questions/3339722/how-to-check-ios-version/3339787#3339787 */
-#define SYSTEM_VERSION_LESS_THAN_OR_EQUAL_TO(v)     ([[[UIDevice currentDevice] systemVersion] compare:v options:NSNumericSearch] != NSOrderedDescending)
 
 /* Detect if we're running iOS 7.0 or higher (With the new minimal UI) */
 #define MINIMAL_UI      ([[UIViewController class] instancesRespondToSelector:@selector(edgesForExtendedLayout)])
@@ -260,7 +256,7 @@
     }
 
     //Create the web view
-    CGFloat webviewOffsetY = SYSTEM_VERSION_GREATER_THAN_OR_EQUAL_TO(@"11.0") ? NAVIGATION_BAR_HEIGHT : 0;
+    CGFloat webviewOffsetY = [[[UIDevice currentDevice] systemVersion] compare:@"11.0" options:NSNumericSearch] != NSOrderedDescending ? NAVIGATION_BAR_HEIGHT : 0;
     CGSize bounds = self.view.bounds.size;
     self.webView = [[UIWebView alloc] initWithFrame:CGRectMake(0, webviewOffsetY, bounds.width, bounds.height - webviewOffsetY)];
     self.webView.delegate = self.progressManager;
