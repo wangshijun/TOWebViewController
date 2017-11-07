@@ -34,6 +34,9 @@
 #import <MessageUI/MFMessageComposeViewController.h>
 #import <Twitter/Twitter.h>
 
+/* system version compare macros, @link https://stackoverflow.com/questions/3339722/how-to-check-ios-version/3339787#3339787 */
+#define SYSTEM_VERSION_LESS_THAN_OR_EQUAL_TO(v)     ([[[UIDevice currentDevice] systemVersion] compare:v options:NSNumericSearch] != NSOrderedDescending)
+
 /* Detect if we're running iOS 7.0 or higher (With the new minimal UI) */
 #define MINIMAL_UI      ([[UIViewController class] instancesRespondToSelector:@selector(edgesForExtendedLayout)])
 /* Detect if we're running iOS 8.0 (With the new device rotation system) */
@@ -256,8 +259,9 @@
     }
 
     //Create the web view
+    CGFloat webviewOffsetY = SYSTEM_VERSION_GREATER_THAN_OR_EQUAL_TO(@"11.0") ? NAVIGATION_BAR_HEIGHT : 0;
     CGSize bounds = self.view.bounds.size;
-    self.webView = [[UIWebView alloc] initWithFrame:CGRectMake(0, NAVIGATION_BAR_HEIGHT, bounds.width, bounds.height - NAVIGATION_BAR_HEIGHT)];
+    self.webView = [[UIWebView alloc] initWithFrame:CGRectMake(0, webviewOffsetY, bounds.width, bounds.height - webviewOffsetY)];
     self.webView.delegate = self.progressManager;
     self.webView.autoresizingMask = UIViewAutoresizingFlexibleHeight | UIViewAutoresizingFlexibleWidth;
     self.webView.backgroundColor = [UIColor clearColor];
